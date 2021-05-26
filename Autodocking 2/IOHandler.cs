@@ -17,9 +17,19 @@ namespace IngameScript
             public List<IMyTimerBlock> output_timers = new List<IMyTimerBlock>();
             public List<IMyTimerBlock> output_start_timers = new List<IMyTimerBlock>();
 
+            private readonly System.Text.RegularExpressions.Regex LCDTagExtract = new System.Text.RegularExpressions.Regex(@"^\[(?<tag>\w+)\]$");
+            private System.Text.RegularExpressions.Regex LCDTagNumberRegex;
+
             public IOHandler(Program _parent_program)
             {
                 parent_program = _parent_program;
+
+                // Extract LCD tag text and generate LCD numbering regex
+                // FIXME: Should really use Custom Data instead D:
+                string lcdTagText = LCDTagExtract.Match(Program.lcd_tag).Groups["tag"].Value;
+                string pattern = @"\[" + lcdTagText + @"(?:\:(?<panelIndex>\d+))?\]";
+                LCDTagNumberRegex = new System.Text.RegularExpressions.Regex(pattern);
+
                 FindOutputBlocks();
             }
 
@@ -36,21 +46,34 @@ namespace IngameScript
             {
                 output_start_timers = new List<IMyTimerBlock>();
 
+
 #pragma warning disable CS0162 // Unreachable code detected
                 if (Program.force_timer_search_on_station)
                 {
                     List<IMyTerminalBlock> t_search_blocks = new List<IMyTerminalBlock>();
                     parent_program.GridTerminalSystem.GetBlocks(t_search_blocks);
-                    output_timers = new List<IMyTimerBlock>();
 
+                    output_timers = new List<IMyTimerBlock>();
                     output_LCDs = new List<IMyTextSurface>();
                     foreach (var block in t_search_blocks)
                     {
                         if (block is IMyTimerBlock && block.CustomName.ToLower().Contains(Program.timer_tag))
                             output_timers.Add((IMyTimerBlock)block);
 
-                        if (block is IMyTextSurface && block.CustomName.ToLower().Contains(Program.lcd_tag))
-                            output_LCDs.Add((IMyTextSurface)block);
+                        if (block is IMyTextSurfaceProvider && LCDTagNumberRegex.IsMatch(block.CustomName))
+                        {
+                            var b = block as IMyTextSurfaceProvider;
+                            int panelIndex = 0;
+
+                            System.Text.RegularExpressions.Match match = LCDTagNumberRegex.Match(block.CustomName);
+                            if (match.Groups["panelIndex"].Success)
+                            {
+                                string panelIndexStr = match.Groups["panelIndex"].Value;
+                                panelIndex = int.Parse(panelIndexStr);
+                            }
+
+                            output_LCDs.Add(b.GetSurface(panelIndex));
+                        }
 
                         if (block is IMyTimerBlock && block.CustomName.ToLower().Contains(Program.start_timer_tag) && blockIsOnMyGrid(block))
                             output_start_timers.Add((IMyTimerBlock)block);
@@ -66,8 +89,20 @@ namespace IngameScript
                         if (block is IMyTimerBlock && block.CustomName.ToLower().Contains(Program.timer_tag) && blockIsOnMyGrid(block))
                             output_timers.Add((IMyTimerBlock)block);
 
-                        if (block is IMyTextSurface && block.CustomName.ToLower().Contains(Program.lcd_tag) && blockIsOnMyGrid(block))
-                            output_LCDs.Add((IMyTextSurface)block);
+                        if (block is IMyTextSurfaceProvider && LCDTagNumberRegex.IsMatch(block.CustomName) && blockIsOnMyGrid(block))
+                        {
+                            var b = block as IMyTextSurfaceProvider;
+                            int panelIndex = 0;
+
+                            System.Text.RegularExpressions.Match match = LCDTagNumberRegex.Match(block.CustomName);
+                            if (match.Groups["panelIndex"].Success)
+                            {
+                                string panelIndexStr = match.Groups["panelIndex"].Value;
+                                panelIndex = int.Parse(panelIndexStr);
+                            }
+
+                            output_LCDs.Add(b.GetSurface(panelIndex));
+                        }
 
                         if (block is IMyTimerBlock && block.CustomName.ToLower().Contains(Program.start_timer_tag) && blockIsOnMyGrid(block))
                             output_start_timers.Add((IMyTimerBlock)block);

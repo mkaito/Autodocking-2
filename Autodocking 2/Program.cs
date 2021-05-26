@@ -52,9 +52,6 @@ namespace IngameScript
         // The text you can add to an LCD block name. The LCD will then output this block's output
         private const string lcd_tag = "[dock]";
 
-        // The text you can add to a block with multiple LCD, such as [dock:0]
-        private readonly Regex lcd_tag_regex = new Regex(@"\[dock:\d{1,2}\]", RegexOptions.Compiled);
-
         // The text you can add to a timer block name. The timer will then be triggered on a completed dock.
         private const string timer_tag = "[dock]";
 
