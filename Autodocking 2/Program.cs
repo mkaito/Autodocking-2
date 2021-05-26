@@ -1,70 +1,107 @@
-﻿using System;
-using System.Collections.Generic;
-using Sandbox.ModAPI.Ingame;
+﻿using Sandbox.ModAPI.Ingame;
 using Sandbox.ModAPI.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using VRageMath;
 
 namespace IngameScript
 {
     internal partial class Program : MyGridProgram
     {
-
         #region mdk preserve
 
         // CHANGEABLE VARIABLES:
 
-        int speedSetting = 2;                           // 1 = Cinematic, 2 = Classic, 3 = Breakneck
-                                                                     // Cinematic: Slower but looks cooler, especially for larger ships.
-                                                                     // Classic: Lands at the classic pace.
-                                                                     // Breakneck: Still safe, but will land pretty much as quick as it can.
-        
+        // 1 = Cinematic, 2 = Classic, 3 = Breakneck
+        // Cinematic: Slower but looks cooler, especially for larger ships.
+        // Classic: Lands at the classic pace.
+        // Breakneck: Still safe, but will land pretty much as quick as it can.
+        private const int speedSetting = 2;
 
-        double caution = 0.4;                                             // Between 0 - 0.9. Defines how close to max deceleration the ship will ride.
-        bool extra_info = false;                                          // If true, this script will give you more information about what's happening than usual.
-        string your_title = "Captain";                                  // How the ship will refer to you.
-        bool small_ship_rotate_on_connector = true;       //If enabled, small ships will rotate on the connector to face the saved direction.
-        bool large_ship_rotate_on_connector = false;      //If enabled, large ships will rotate on the connector to face the saved direction.
-        bool rotate_on_approach = false;                          //If enabled,  the ship will rotate to the saved direction on connector approach.
-        double topSpeed = 100;                                         // The top speed the ship will go in m/s.
+        // Between 0 - 0.9. Defines how close to max deceleration the ship will ride.
+        private const double caution = 0.4;
 
-        bool extra_soft_landing_mode = false;                 // If your ship is hitting your connector too hard, enable this.
-        double connector_clearance = 0;                          // If you raise this number (measured in meters), the ship will fly connector_clearance higher before coming down onto the connector.
-        double add_acceleration = 0;                                // If your ship is accelerating very slow, or perhaps stopping at a low top speed, try raising this (e.g to 10).
+        // If true, this script will give you more information about what's happening than usual.
+        private const bool extra_info = false;
 
-        string lcd_tag = "[dock]";                                       // The text you can add to an LCD block name. The LCD will then output this block's output
-        string timer_tag = "[dock]";                                   // The text you can add to a timer block name. The timer will then be triggered on a completed dock.
-        bool force_timer_search_on_station = false;       // If enabled, the ship will make sure it always searches the station for [dock] (the timer_tag) in the names of any timer blocks.
-        string start_timer_tag = "[start dock]";                 // A timer with this text in the name will be triggered as soon as a docking procedure is started.
+        // How the ship will refer to you.
+        private const string your_title = "Captain";
 
-        bool enable_antenna_function = true;                   //If enabled, the ship will try to search for an optional home script. Disable if the antenna functionality is giving you problems.
+        //If enabled, small ships will rotate on the connector to face the saved direction.
+        private const bool small_ship_rotate_on_connector = true;
 
-        bool allow_connector_on_seperate_grid = false; // WARNING: All connectors on your ship must have [dock] in the name if you set this to true! This option allows your connector to not be on the same grid.
+        //If enabled, large ships will rotate on the connector to face the saved direction.
+        private const bool large_ship_rotate_on_connector = false;
 
-        double high_speed_lead_amount = 1;                  // WARNING: Only change if the ship can't land on high speed ships (over 120 m/s).
-                                                                                      //If this number is less than 1, the ship will fly ahead of the connector more when the connector is moving. This can be a negative number, however try 0 first.
+        //If enabled,  the ship will rotate to the saved direction on connector approach.
+        private const bool rotate_on_approach = false;
+
+        // The top speed the ship will go in m/s.
+        private const double topSpeed = 100;
+
+        // If your ship is hitting your connector too hard, enable this.
+        private const bool extra_soft_landing_mode = false;
+
+        // If you raise this number (measured in meters), the ship will fly connector_clearance higher before coming down onto the connector.
+        private const double connector_clearance = 0;
+
+        // If your ship is accelerating very slow, or perhaps stopping at a low top speed, try raising this (e.g to 10).
+        private const double add_acceleration = 0;
+
+        // The text you can add to an LCD block name. The LCD will then output this block's output
+        private const string lcd_tag = "[dock]";
+
+        // The text you can add to a block with multiple LCD, such as [dock:0]
+        private readonly Regex lcd_tag_regex = new Regex(@"\[dock:\d{1,2}\]", RegexOptions.Compiled);
+
+        // The text you can add to a timer block name. The timer will then be triggered on a completed dock.
+        private const string timer_tag = "[dock]";
+
+        // If enabled, the ship will make sure it always searches the station for [dock] (the timer_tag) in the names of any timer blocks.
+        private const bool force_timer_search_on_station = false;
+
+        // A timer with this text in the name will be triggered as soon as a docking procedure is started.
+        private const string start_timer_tag = "[start dock]";
+
+        //If enabled, the ship will try to search for an optional home script. Disable if the antenna functionality is giving you problems.
+        private const bool enable_antenna_function = true;
+
+        // WARNING: All connectors on your ship must have [dock] in the name if you set this to true! This option allows your connector to not be on the same grid.
+        private const bool allow_connector_on_seperate_grid = false;
+
+        // WARNING: Only change if the ship can't land on high speed ships (over 120 m/s).
+        //If this number is less than 1, the ship will fly ahead of the connector more when the connector is moving. This can be a negative number, however try 0 first.
+        private const double high_speed_lead_amount = 1;
 
         // Waypoint settings:
-        double required_waypoint_accuracy = 6;             // how close the ship needs to be to a waypoint to complete it (measured in meters). Do note, closer waypoints are more accurate anyway.
-        double waypoints_top_speed = 100;                     // the top speed the ship will go in m/s when it's moving towards waypoints
-        bool rotate_during_waypoints = true;                    // if true, the ship will rotate to face each waypoint's direction as it goes along.
 
+        // how close the ship needs to be to a waypoint to complete it (measured in meters). Do note, closer waypoints are more accurate anyway.
+        private const double required_waypoint_accuracy = 6;
 
+        // the top speed the ship will go in m/s when it's moving towards waypoints
+        private const double waypoints_top_speed = 100;
+
+        // if true, the ship will rotate to face each waypoint's direction as it goes along.
+        private const bool rotate_during_waypoints = true;
 
         // This code has been minified by Malware's MDK minifier.
         // Find the original source code here:
         // https://github.com/ksqk34/Autodocking-2
 
-
-
-
         // DO NOT CHANGE BELOW THIS LINE
         // Well you can try...
+
+        #endregion mdk preserve
+
         private readonly ShipSystemsAnalyzer systemsAnalyzer;
-        #endregion
-        private const double updatesPerSecond = 10; // Defines how many times the script performes it's calculations per second.
+
+        // Defines how many times the script performes it's calculations per second.
+        private const double updatesPerSecond = 10;
 
         // Script constants:
         private const double proportionalConstant = 2;
+
         private const double derivativeConstant = .5;
         private const double timeLimit = 1 / updatesPerSecond;
         private readonly AntennaHandler antennaHandler;
@@ -75,19 +112,17 @@ namespace IngameScript
         private readonly IOHandler shipIOHandler;
 
         // Script systems:
-        
 
         private readonly ShipSystemsController systemsController;
         private readonly PID yawPID;
         private double anglePitch;
 
-
         // Ship vector math variables:
         private double angleRoll;
+
         private double angleYaw;
 
         public List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
-
 
         // Script States:
         private string current_argument;
@@ -113,6 +148,7 @@ namespace IngameScript
 
         //string persistantText = "";
         private double timeElapsed;
+
         private double timeElapsedSinceAntennaCheck;
         private double topSpeedUsed = 100;
 
@@ -121,7 +157,6 @@ namespace IngameScript
 
         public Program()
         {
-
             errorState = false;
             Runtime.UpdateFrequency = UpdateFrequency.Once;
             platformVelocity = Vector3D.Zero;
@@ -138,7 +173,6 @@ namespace IngameScript
             systemsAnalyzer = new ShipSystemsAnalyzer(this);
             systemsController = new ShipSystemsController(this);
 
-
             pitchPID = new PID(proportionalConstant, 0, derivativeConstant, -10, 10, timeLimit);
             rollPID = new PID(proportionalConstant, 0, derivativeConstant, -10, 10, timeLimit);
             yawPID = new PID(proportionalConstant, 0, derivativeConstant, -10, 10, timeLimit);
@@ -150,7 +184,7 @@ namespace IngameScript
 
         private void RetrieveStorage()
         {
-            //Data 
+            //Data
 
             var two_halves = Storage.Split('#');
             //if (copy_paste_persistant_memory)
@@ -173,9 +207,8 @@ namespace IngameScript
             {
                 var referenceBlock = systemsAnalyzer.currentHomeLocation.shipConnector;
 
-
                 var referenceOrigin = referenceBlock.GetPosition();
-                
+
                 var targetDirection = -waypoint.forward;
                 var gravityVecLength = targetDirection.Length();
                 if (targetDirection.LengthSquared() == 0)
@@ -200,7 +233,7 @@ namespace IngameScript
                 Vector3D planetRelativeLeftVec = referenceForward.Cross(targetDirection);
                 angleRoll = PID.VectorAngleBetween(referenceLeft, planetRelativeLeftVec);
                 angleRoll *= PID.VectorCompareDirection(PID.VectorProjection(referenceLeft, targetDirection),
-                    targetDirection); //ccw is positive 
+                    targetDirection); //ccw is positive
                 if (requireYawControl)
                     //angleYaw = 0;
                     angleYaw = Math.Acos(MathHelper.Clamp(waypoint.auxilleryDirection.Dot(referenceLeft), -1, 1)) - Math.PI / 2;
@@ -208,10 +241,8 @@ namespace IngameScript
                     angleYaw = 0;
                 //shipIOHandler.Echo("Angle Yaw: " + IOHandler.RoundToSignificantDigits(angleYaw, 2).ToString());
 
-
                 anglePitch *= -1;
                 angleRoll *= -1;
-
 
                 //shipIOHandler.Echo("Pitch angle: " + Math.Round((anglePitch / Math.PI * 180), 2).ToString() + " deg");
                 //shipIOHandler.Echo("Roll angle: " + Math.Round((angleRoll / Math.PI * 180), 2).ToString() + " deg");
@@ -223,13 +254,12 @@ namespace IngameScript
 
                 //shipIOHandler.Echo("Angle: " + rawDevAngle.ToString());
 
-
                 var rollSpeed = rollPID.Control(angleRoll);
                 var pitchSpeed = pitchPID.Control(anglePitch);
                 double yawSpeed = 0;
                 if (requireYawControl) yawSpeed = yawPID.Control(angleYaw);
 
-                //---Set appropriate gyro override  
+                //---Set appropriate gyro override
                 if (!errorState)
                     //do gyros
                     systemsController.ApplyGyroOverride(pitchSpeed, yawSpeed, -rollSpeed, systemsAnalyzer.gyros,
@@ -239,9 +269,9 @@ namespace IngameScript
 
             return -1;
         }
+
         private double AlignWithWaypoint(Waypoint waypoint)
         {
-
             MatrixD stationConnectorWorldMatrix = Matrix.CreateWorld(systemsAnalyzer.currentHomeLocation.stationConnectorPosition, systemsAnalyzer.currentHomeLocation.stationConnectorForward,
                 (-systemsAnalyzer.currentHomeLocation.stationConnectorLeft).Cross(systemsAnalyzer.currentHomeLocation.stationConnectorForward));
 
@@ -250,14 +280,9 @@ namespace IngameScript
             Vector3D waypointForward = HomeLocation.localDirectionToWorldDirection(waypoint.forward, systemsAnalyzer.currentHomeLocation);
             Vector3D waypointRight = HomeLocation.localDirectionToWorldDirection(waypoint.auxilleryDirection, systemsAnalyzer.currentHomeLocation);
 
-
             var targetDirection = waypointForward;
-            
-
 
             var referenceOrigin = referenceGrid.GetPosition();
-
-
 
             var block_WorldMatrix = Matrix.CreateWorld(referenceOrigin,
                 referenceGrid.WorldMatrix.Up, //referenceBlock.WorldMatrix.Forward,
@@ -271,15 +296,14 @@ namespace IngameScript
             anglePitch = Math.Acos(MathHelper.Clamp(targetDirection.Dot(referenceForward), -1, 1)) - Math.PI / 2;
             //anglePitch *= PID.VectorCompareDirection(targetDirection, referenceForward);
 
-
             Vector3D relativeLeftVec = referenceForward.Cross(targetDirection);
             angleRoll = PID.VectorAngleBetween(referenceLeft, relativeLeftVec);
             angleRoll *= PID.VectorCompareDirection(PID.VectorProjection(referenceLeft, targetDirection),
-                targetDirection); //ccw is positive 
+                targetDirection); //ccw is positive
                                   //angleRoll *= PID.VectorCompareDirection(PID.VectorProjection(referenceLeft, targetDirection),
-                                  //    targetDirection); //ccw is positive 
+                                  //    targetDirection); //ccw is positive
 
-                                  Vector3D waypointUp = (-waypointRight).Cross(waypointForward);
+            Vector3D waypointUp = (-waypointRight).Cross(waypointForward);
             angleYaw = Math.Acos(MathHelper.Clamp((-waypointUp).Dot(referenceLeft), -1, 1)) - Math.PI / 2;
             //angleYaw *= PID.VectorCompareDirection(PID.VectorProjection(referenceLeft, targetDirection), targetDirection);
 
@@ -297,18 +321,16 @@ namespace IngameScript
 
             //shipIOHandler.Echo("Angle: " + rawDevAngle.ToString());
 
-
             var rollSpeed = rollPID.Control(angleRoll) * 1;
             var pitchSpeed = pitchPID.Control(anglePitch) * 1;
             double yawSpeed = yawPID.Control(angleYaw) * 1;
 
-            //---Set appropriate gyro override  
+            //---Set appropriate gyro override
             if (!errorState)
                 //do gyros
                 systemsController.ApplyGyroOverride(pitchSpeed, yawSpeed, -rollSpeed, systemsAnalyzer.gyros,
                     block_WorldMatrix);
             return rawDevAngle;
-
         }
 
         public void Save()
@@ -321,7 +343,7 @@ namespace IngameScript
             Storage = "";
             //if (copy_paste_persistant_memory)
             //    Me.CustomData = "";
-            //Data 
+            //Data
             foreach (var homeLocation in homeLocations)
             {
                 AppendToStorage(homeLocation.ProduceSaveData() + ";");
@@ -399,17 +421,29 @@ namespace IngameScript
             if (HomeLocationIndex != -1)
             {
                 // Docking location that was just created, already exists.
+
+#pragma warning disable CS0162 // Unreachable code detected
                 if (extra_info)
                     shipIOHandler.Echo("- Docking location already Exists!\n- Adding argument.");
+#pragma warning restore CS0162 // Unreachable code detected
+
                 if (!homeLocations[HomeLocationIndex].arguments.Contains(argument))
                 {
+#pragma warning disable CS0162 // Unreachable code detected
                     if (extra_info)
                         shipIOHandler.Echo("Other arguments associated: " +
                                            shipIOHandler.GetHomeLocationArguments(homeLocations[HomeLocationIndex]));
+#pragma warning restore CS0162 // Unreachable code detected
+
                     homeLocations[HomeLocationIndex].arguments.Add(argument);
+
+#pragma warning disable CS0162 // Unreachable code detected
                     if (extra_info)
                         shipIOHandler.Echo("- New argument added.");
+#pragma warning restore CS0162 // Unreachable code detected
                 }
+
+#pragma warning disable CS0162 // Unreachable code detected
                 else if (extra_info)
                 {
                     shipIOHandler.Echo("- Argument already in!");
@@ -417,14 +451,18 @@ namespace IngameScript
                         shipIOHandler.Echo("All arguments associated: " +
                                            shipIOHandler.GetHomeLocationArguments(homeLocations[HomeLocationIndex]));
                 }
+#pragma warning restore CS0162 // Unreachable code detected
 
                 homeLocations[HomeLocationIndex].UpdateData(my_connected_connector, station_connector);
             }
             else
             {
                 homeLocations.Add(newHomeLocation);
+
+#pragma warning disable CS0162 // Unreachable code detected
                 if (extra_info)
                     shipIOHandler.Echo("- Added new docking location.");
+#pragma warning restore CS0162 // Unreachable code detected
             }
 
             //Check if any homelocations had that argument before, if so, remove it.
@@ -448,8 +486,10 @@ namespace IngameScript
 
             if (extra_info)
             {
+#pragma warning disable CS0162 // Unreachable code detected
                 if (amountFound == 1)
                     shipIOHandler.Echo("- Found 1 other association with that argument. Removed this other.");
+#pragma warning restore CS0162 // Unreachable code detected
                 else if (amountFound > 1)
                     shipIOHandler.Echo("- Found " + amountFound +
                                        " other associations with that argument. Removed these others.");
@@ -457,16 +497,19 @@ namespace IngameScript
 
             if (argument == "")
             {
+#pragma warning disable CS0162 // Unreachable code detected
                 if (!extra_info)
                     return "SAVED\nSaved docking location as no argument, " + your_title + ".";
                 return "Saved docking location as no argument, " + your_title + ".";
+#pragma warning restore CS0162 // Unreachable code detected
             }
 
+#pragma warning disable CS0162 // Unreachable code detected
             if (!extra_info)
                 return "SAVED\nSaved docking location as " + argument + ", " + your_title + ".";
             return "Saved docking location as " + argument + ", " + your_title + ".";
+#pragma warning restore CS0162 // Unreachable code detected
         }
-
 
         private bool recording = false;
         private bool waiting_for_arg = false;
@@ -515,6 +558,7 @@ namespace IngameScript
             }
             return dist;
         }
+
         public void recordWaypoint(IMyShipConnector connectedConnector, string argument)
         {
             if (connectedConnector == null)
@@ -535,7 +579,6 @@ namespace IngameScript
                         if (result)
                         {
                             speed = speed_num;
-                            
                         }
                     }
                 }
@@ -557,8 +600,6 @@ namespace IngameScript
                 }
                 current_waypoint_number += 1;
                 shipIOHandler.WaypointEcho(recording_arg, current_waypoint_number, extra_output);
-
-
             }
             else
             {
@@ -570,7 +611,6 @@ namespace IngameScript
                 }
                 else
                 {
-                    
                     recording = false;
                     waiting_for_arg = false;
 
@@ -603,8 +643,6 @@ namespace IngameScript
                             double last_accuracy = accuracyFromDistance(waypointGlobalPosition, stationConnectorPos) * 0.7;
                             calculated_accuracy = Math.Min(last_accuracy, calculated_accuracy);
                         }
-                        
-
 
                         Vector3D gridForwardToLocal =
                             HomeLocation.worldDirectionToLocalDirection(waypoints_forwards[waypointIndex],
@@ -640,17 +678,14 @@ namespace IngameScript
 
                     currentHomeLocation.landingSequences[recording_arg] = landing_sequence;
 
-                    
                     shipIOHandler.Echo("Recorded " + (current_waypoint_number + 1).ToString() + " waypoints to argument: " + IOHandler.ConvertArg(recording_arg));
                     current_waypoint_number = 0;
                 }
             }
-            
         }
 
         public string checkForClear(string argument)
         {
-
             string[] split = argument.Split(' ');
 
             if (split.Length > 1)
@@ -670,22 +705,21 @@ namespace IngameScript
             }
         }
 
-
-
         public void ClearMemoryLocation(string argument)
         {
             //Check if any homelocations had that argument before, if so, remove it.
             bool found_arg = false;
             var toDelete = new List<HomeLocation>();
             foreach (var currentHomeLocation in homeLocations)
-                if (currentHomeLocation.arguments.Contains(argument)) {
-                        currentHomeLocation.arguments.Remove(argument);
-                        if (currentHomeLocation.landingSequences.ContainsKey(argument))
-                        {
-                            currentHomeLocation.landingSequences.Remove(argument);
-                        }
-                        found_arg = true;
-                        if (currentHomeLocation.arguments.Count == 0) toDelete.Add(currentHomeLocation);
+                if (currentHomeLocation.arguments.Contains(argument))
+                {
+                    currentHomeLocation.arguments.Remove(argument);
+                    if (currentHomeLocation.landingSequences.ContainsKey(argument))
+                    {
+                        currentHomeLocation.landingSequences.Remove(argument);
+                    }
+                    found_arg = true;
+                    if (currentHomeLocation.arguments.Count == 0) toDelete.Add(currentHomeLocation);
                 }
 
             while (toDelete.Count > 0)
@@ -702,7 +736,6 @@ namespace IngameScript
             {
                 shipIOHandler.Echo("WARNING\nThe argument: " + IOHandler.ConvertArg(argument) + "\nwasn't found in memory.");
             }
-            
         }
 
         public string ProduceDataOutputString()
@@ -711,7 +744,6 @@ namespace IngameScript
             foreach (var homeLocation in homeLocations)
             {
                 o_string += homeLocation.ProduceUserFriendlyData() + "\n";
-
             }
 
             if (o_string.Length > 1)
@@ -739,7 +771,6 @@ namespace IngameScript
                             IMyShipConnector new_connector = (IMyShipConnector)GridTerminalSystem.GetBlockWithId(ID_extracted);
                             if (new_connector != null)
                             {
-                                
                                 string resultant_arg = "";
                                 string[] raw_split = argument.Split('!');
                                 for (int i = 0; i < raw_split.Length - 1; i++)
@@ -762,14 +793,14 @@ namespace IngameScript
 
         public bool checkForReadonly(ref string argument)
         {
-            if(argument.Length > 1)
+            if (argument.Length > 1)
             {
                 if (argument[0] == '!' && argument.Contains(" "))
                 {
                     string[] arg_split = argument.Split(' ');
-                    if(arg_split.Length > 1)
+                    if (arg_split.Length > 1)
                     {
-                        if(arg_split[0].ToLower() == "!readonly")
+                        if (arg_split[0].ToLower() == "!readonly")
                         {
                             argument = argument.Remove(0, 10);
                             return true;
@@ -795,7 +826,6 @@ namespace IngameScript
                     // If an error has happened
                     errorState = false;
                     systemsAnalyzer.GatherBasicData();
-
                 }
 
                 if (!errorState)
@@ -804,8 +834,6 @@ namespace IngameScript
 
                     if (!recording)
                     {
-
-
                         var my_connected_connector = systemsAnalyzer.FindMyConnectedConnector();
 
                         var clear_command = checkForClear(argument);
@@ -820,7 +848,6 @@ namespace IngameScript
                                 shipIOHandler.Echo("WARNING\nPlease make sure you are not connected\nto a home connector before recording, " + your_title + ".");
                             }
                         }
-
                         else if (argument.ToLower().Trim() == "[data_output_request]")
                         {
                             Me.CustomData = ProduceDataOutputString();
@@ -836,12 +863,10 @@ namespace IngameScript
 
                             if (user_wants_readonly && my_connected_connector != null)
                             {
-
-                                    if (my_connected_connector.Status == MyShipConnectorStatus.Connectable)
-                                    {
-                                        my_connected_connector = null;
-                                    }
-                                
+                                if (my_connected_connector.Status == MyShipConnectorStatus.Connectable)
+                                {
+                                    my_connected_connector = null;
+                                }
                             }
 
                             if (my_connected_connector == null)
@@ -863,7 +888,6 @@ namespace IngameScript
                                     {
                                         Begin(argument);
                                     }
-                                    
                                 }
                             }
                             else
@@ -905,7 +929,6 @@ namespace IngameScript
                             }
                             recordWaypoint(my_connected_connector, argument);
                         }
-                        
                     }
                 }
 
@@ -939,7 +962,6 @@ namespace IngameScript
                 }
             }
 
-
             if ((updateSource & UpdateType.IGC) != 0 && enable_antenna_function)
                 //shipIOHandler.Clear();
 
@@ -950,7 +972,6 @@ namespace IngameScript
 
         //public void ScriptMain(string argum)
         //{
-
         //}
 
         private HomeLocation FindHomeLocation(string argument)
@@ -987,7 +1008,6 @@ namespace IngameScript
                     // We have completed all waypoints so land straight to the connector.
 
                     AutoLandToConnector(true);
-
                 }
                 else
                 {
@@ -1000,8 +1020,6 @@ namespace IngameScript
                         nextWaypoint = landing_sequence[current_waypoint_number + 1];
                     }
 
-                    
-
                     double dist_to_waypoint = AutoFollowWaypoint(currentWaypoint, nextWaypoint);
 
                     double accuracy = Math.Min(required_waypoint_accuracy,
@@ -1012,7 +1030,6 @@ namespace IngameScript
                         // We've reached the latest waypoint.
                         current_waypoint_number += 1;
                     }
-
                 }
             }
             else
@@ -1030,7 +1047,6 @@ namespace IngameScript
         {
             var dontRotateOnConnector = !small_ship_rotate_on_connector && !systemsAnalyzer.isLargeShip ||
                                         !large_ship_rotate_on_connector && systemsAnalyzer.isLargeShip;
-
 
             if (systemsAnalyzer.currentHomeLocation.shipConnector.Status == MyShipConnectorStatus.Connected ||
                 systemsAnalyzer.currentHomeLocation.shipConnector.Status == MyShipConnectorStatus.Connectable &&
@@ -1055,6 +1071,7 @@ namespace IngameScript
                     var rotate_on_connector_accuracy = 0.015; // Radians
                     double height_needed_for_connector = 5;
 
+#pragma warning disable CS0162 // Unreachable code detected
                     if (speedSetting == 1)
                     {
                         height_needed_for_connector = 7;
@@ -1072,7 +1089,13 @@ namespace IngameScript
                         height_needed_for_connector = 6;
                         topSpeedUsed = topSpeed;
                     }
-                    if (extra_soft_landing_mode) height_needed_for_connector = 8;
+#pragma warning restore CS0162 // Unreachable code detected
+
+#pragma warning disable CS0162 // Unreachable code detected
+                    if (extra_soft_landing_mode)
+                        height_needed_for_connector = 8;
+#pragma warning restore CS0162 // Unreachable code detected
+
                     height_needed_for_connector += connector_clearance;
 
                     if (only_last_landing) height_needed_for_connector = 0;
@@ -1091,7 +1114,6 @@ namespace IngameScript
                     //shipIOHandler.Echo(DeltaTimeReal);
                     //shipIOHandler.Echo(systemsAnalyzer.currentHomeLocation.stationVelocity.Length());
 
-
                     var ConnectorLocation = systemsAnalyzer.currentHomeLocation.stationConnectorPosition +
                                             DeltaTimeReal * systemsAnalyzer.currentHomeLocation.stationVelocity * // CHANGED
                                             speedDampener;
@@ -1106,8 +1128,6 @@ namespace IngameScript
                     //shipIOHandler.Echo("acc: " + systemsAnalyzer.currentHomeLocation.stationAcceleration.ToString());
 
                     var point_in_sequence = "Starting...";
-
-
 
                     var aboveConnectorWaypoint = new Waypoint(target_position, ConnectorDirection, ConnectorUp);
 
@@ -1136,7 +1156,6 @@ namespace IngameScript
                     {
                         if (Math.Abs(direction_accuracy) < 15)
                         {
-
                             // Test if ship is behind the station connector:
                             var pointOnConnectorAxis = PID.NearestPointOnLine(ConnectorLocation, ConnectorDirection,
                                 current_position);
@@ -1145,7 +1164,6 @@ namespace IngameScript
                                 ConnectorDirection.Dot(Vector3D.Normalize(heightDifference)) *
                                 heightDifference.Length();
                             var sidewaysDistance = (current_position - pointOnConnectorAxis).Length();
-
 
                             if (sidewaysDistance > sideways_dist_needed_to_land && signedHeightDistanceToConnector <
                                 height_needed_for_connector * 0.9 && !only_last_landing)
@@ -1161,26 +1179,28 @@ namespace IngameScript
                                 SomewhereOnCorrectSide.maximumAcceleration = 20;
                                 SomewhereOnCorrectSide.required_accuracy = 0.8;
 
+#pragma warning disable CS0162 // Unreachable code detected
                                 if (speedSetting == 1)
                                     aboveConnectorWaypoint.maximumAcceleration = 8;
                                 else if (speedSetting == 3)
                                     aboveConnectorWaypoint.maximumAcceleration = 20;
                                 else
                                     aboveConnectorWaypoint.maximumAcceleration = 10;
-
+#pragma warning restore CS0162 // Unreachable code detected
 
                                 MoveToWaypoint(SomewhereOnCorrectSide);
                                 point_in_sequence = "Behind target, moving to be in front";
                             }
                             else if (sidewaysDistance > sideways_dist_needed_to_land && !only_last_landing)
                             {
+#pragma warning disable CS0162 // Unreachable code detected
                                 if (speedSetting == 1)
                                     aboveConnectorWaypoint.maximumAcceleration = 5;
                                 else if (speedSetting == 3)
                                     aboveConnectorWaypoint.maximumAcceleration = 15;
                                 else
                                     aboveConnectorWaypoint.maximumAcceleration = 5;
-
+#pragma warning restore CS0162 // Unreachable code detected
 
                                 MoveToWaypoint(aboveConnectorWaypoint);
                                 point_in_sequence = "Moving toward connector";
@@ -1195,13 +1215,19 @@ namespace IngameScript
                                         ConnectorDirection, ConnectorUp);
                                 DockedToConnector.maximumAcceleration = 3;
 
+#pragma warning disable CS0162 // Unreachable code detected
                                 if (speedSetting == 1)
                                     aboveConnectorWaypoint.maximumAcceleration = 1;
                                 else if (speedSetting == 3)
                                     aboveConnectorWaypoint.maximumAcceleration = 3;
                                 else
                                     aboveConnectorWaypoint.maximumAcceleration = 1;
-                                if (extra_soft_landing_mode) topSpeedUsed = 2;
+#pragma warning restore CS0162 // Unreachable code detected
+
+#pragma warning disable CS0162 // Unreachable code detected
+                                if (extra_soft_landing_mode)
+                                    topSpeedUsed = 2;
+#pragma warning restore CS0162 // Unreachable code detected
 
                                 var acc = MoveToWaypoint(DockedToConnector);
                                 point_in_sequence = "landing on connector";
@@ -1214,11 +1240,13 @@ namespace IngameScript
                             point_in_sequence = "Rotating to connector";
                         }
 
+#pragma warning disable CS0162 // Unreachable code detected
                         if (extra_info)
                         {
                             shipIOHandler.Echo("Status: " + status);
                             shipIOHandler.Echo("Place in sequence: " + point_in_sequence);
                         }
+#pragma warning restore CS0162 // Unreachable code detected
 
                         var elapsed = DateTime.Now - scriptStartTime;
                         shipIOHandler.Echo("\nTime elapsed: " + elapsed.Seconds + "." +
@@ -1228,8 +1256,6 @@ namespace IngameScript
                 }
             }
         }
-
-
 
         private double AutoFollowWaypoint(Waypoint currentWaypoint, Waypoint nextWaypoint)
         {
@@ -1247,7 +1273,7 @@ namespace IngameScript
 
             // Motion settings
 
-            
+#pragma warning disable CS0162 // Unreachable code detected
             if (speedSetting == 1)
             {
                 topSpeedUsed = 10;
@@ -1260,16 +1286,15 @@ namespace IngameScript
             {
                 topSpeedUsed = currentWaypoint.top_speed;
             }
+#pragma warning restore CS0162 // Unreachable code detected
+
             if (topSpeedUsed > currentWaypoint.top_speed) topSpeedUsed = currentWaypoint.top_speed;
 
-
-            #endregion
-
+            #endregion MotionSettings
 
             //var speedDampener = 1 - systemsAnalyzer.currentHomeLocation.stationVelocity.Length() / 100 * 0.2;
             //var WaypointLocation = currentWaypoint.position + (DeltaTimeReal * systemsAnalyzer.currentHomeLocation.stationVelocity * speedDampener);
             //var current_position = Me.CubeGrid.GetPosition();
-
 
             //var point_in_sequence = "Starting...";
 
@@ -1278,45 +1303,44 @@ namespace IngameScript
             {
                 AlignWithWaypoint(currentWaypoint);
             }
-            
 
+#pragma warning disable CS0162 // Unreachable code detected
             if (speedSetting == 1)
                 currentWaypoint.maximumAcceleration = 15;
             else if (speedSetting == 3)
                 currentWaypoint.maximumAcceleration = 15;
             else
                 currentWaypoint.maximumAcceleration = 20;
+#pragma warning restore CS0162 // Unreachable code detected
 
             double dist_left = MoveToWaypoint(currentWaypoint);
             //point_in_sequence = "Waypoint " + current_waypoint_number.ToString() + ".";
-                            
+
+#pragma warning disable CS0162 // Unreachable code detected
             if (extra_info)
             {
                 shipIOHandler.Echo("Status: " + status);
-                shipIOHandler.Echo("Moving to waypoint: " + (current_waypoint_number+1).ToString() + ".");
+                shipIOHandler.Echo("Moving to waypoint: " + (current_waypoint_number + 1).ToString() + ".");
             }
+#pragma warning restore CS0162 // Unreachable code detected
             else
             {
                 shipIOHandler.Echo("Moving to waypoint: " + (current_waypoint_number + 1).ToString() + ".");
             }
 
             var elapsed = DateTime.Now - scriptStartTime;
-            shipIOHandler.Echo("\nTime elapsed: " + elapsed.Seconds + "." + 
+            shipIOHandler.Echo("\nTime elapsed: " + elapsed.Seconds + "." +
                                 elapsed.Milliseconds.ToString().Substring(0, 1));
             shipIOHandler.EchoFinish();
 
             return dist_left;
         }
 
-
-
-
         private double MoveToWaypoint(Waypoint waypoint)
         {
             //bool tempError = false;
             DeltaTime = Runtime.TimeSinceLastRun.TotalSeconds * 10;
             DeltaTimeReal = (DateTime.Now - previousTime).TotalSeconds;
-
 
             var CurrentVelocity = systemsAnalyzer.cockpit.GetShipVelocities().LinearVelocity;
             var VelocityChange = CurrentVelocity - previousVelocity;
@@ -1327,7 +1351,6 @@ namespace IngameScript
 
             ThrusterGroup forceThrusterGroup = null;
             status = "ERROR";
-
 
             var UnknownAcceleration = -systemsAnalyzer.currentHomeLocation.stationAcceleration * safetyAcceleration;
 
@@ -1411,10 +1434,8 @@ namespace IngameScript
                 max_reverse_acceleration = forceThrusterGroup.lambdaResult / systemsAnalyzer.shipMass;
             }
 
-
             double distanceToGetToZero = 0;
             var Accelerating = false;
-
 
             if (max_reverse_acceleration != 0)
             {
@@ -1475,7 +1496,6 @@ namespace IngameScript
             previousTime = DateTime.Now;
             return totalDistanceLeft;
         }
-
 
         private void SetResultantAcceleration(Vector3D Gravity_And_Unknown_Forces, Vector3D TargetForceDirection,
             double proportionOfThrustToUse)
@@ -1542,7 +1562,5 @@ namespace IngameScript
                             thisThruster.SetValue("Override", 0f);
             }
         }
-
-
     }
 }

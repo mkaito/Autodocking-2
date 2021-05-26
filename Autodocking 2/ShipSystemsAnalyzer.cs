@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using Sandbox.ModAPI.Ingame;
+﻿using Sandbox.ModAPI.Ingame;
+using System.Collections.Generic;
 using VRageMath;
 
 namespace IngameScript
@@ -22,9 +22,9 @@ namespace IngameScript
             //Current status variables:
             //public IMyShipConnector myConnector; // OUTDATED MUST CHANGE!
             public HomeLocation currentHomeLocation;
+
             public ThrusterGroup DownThrust;
             private bool firstTime = true;
-
 
             /// <summary>Directions are with respect to the cockpit.</summary>
             public ThrusterGroup ForwardThrust;
@@ -40,18 +40,15 @@ namespace IngameScript
             public IMyRemoteControl remote_control;
             public ThrusterGroup RightThrust;
 
-
             /// <summary>Mass of the ship in Kilograms</summary>
             public float shipMass = 9999;
 
             public Dictionary<Base6Directions.Direction, ThrusterGroup> thrusterGroups;
 
             public List<IMyThrust> thrusters = new List<IMyThrust>();
-            double off_thrusters_count = 0;
-
+            private double off_thrusters_count = 0;
 
             public ThrusterGroup UpThrust;
-
 
             public ShipSystemsAnalyzer(Program in_parent_program)
             {
@@ -130,7 +127,6 @@ namespace IngameScript
                     t1.matrixM[2, 0] = t2.WorldThrustDirection.Z;
                     t1.matrixM[2, 1] = t3.WorldThrustDirection.Z;
                     t1.matrixM[2, 2] = -targetDirection.Z;
-
 
                     t1.ANS[0] = -t1.MaxThrust * t1.WorldThrustDirection.X * maxPercentageThrustToUse - minus_g.X;
                     t1.ANS[1] = -t1.MaxThrust * t1.WorldThrustDirection.Y * maxPercentageThrustToUse - minus_g.Y;
@@ -211,7 +207,6 @@ namespace IngameScript
                 t1.matrixM[2, 1] = t1.finalThrusterGroups[1].WorldThrustDirection.Z;
                 t1.matrixM[2, 2] = t1.finalThrusterGroups[2].WorldThrustDirection.Z;
 
-
                 t1.ANS[0] = resultantForce.X;
                 t1.ANS[1] = resultantForce.Y;
                 t1.ANS[2] = resultantForce.Z;
@@ -241,7 +236,7 @@ namespace IngameScript
 
                 if (AccumulatorGroup.Count > 3)
                 {
-                    AccumulatorGroup.Sort(delegate(ThrusterGroup c1, ThrusterGroup c2)
+                    AccumulatorGroup.Sort(delegate (ThrusterGroup c1, ThrusterGroup c2)
                     {
                         if (c1.WorldThrustDirection.Dot(WorldDirection) > c2.WorldThrustDirection.Dot(WorldDirection))
                             return -1;
@@ -267,7 +262,6 @@ namespace IngameScript
                 return t1;
             }
 
-
             #region StartupCalculations
 
             /// <summary>
@@ -279,8 +273,7 @@ namespace IngameScript
                 if (!firstTime && !parent_program.scriptEnabled)
                     parent_program.shipIOHandler.Echo(
                         "RE-INITIALIZED\nSome change was detected\nso I have re-checked ship data, " +
-                        parent_program.your_title + ".");
-
+                        Program.your_title + ".");
 
                 cockpit = FindCockpit();
                 if (cockpit != null)
@@ -293,7 +286,7 @@ namespace IngameScript
                 {
                     parent_program.shipIOHandler.Error(
                         "The ship systems analyzer couldn't find some sort of cockpit or remote control.\nPlease check you have one of these, " +
-                        parent_program.your_title + ".");
+                        Program.your_title + ".");
                 }
 
                 if (parent_program.Me.CubeGrid.GridSize == 0.5)
@@ -305,22 +298,22 @@ namespace IngameScript
                 thrusters = FindThrusters();
                 gyros = FindGyros();
 
-
                 var antenna_result = "";
-                if (parent_program.enable_antenna_function)
+                if (Program.enable_antenna_function)
                     antenna_result = parent_program.antennaHandler.CheckAntenna();
                 if (!parent_program.errorState)
                     if (firstTime)
                     {
-                        parent_program.shipIOHandler.Echo("Waiting for orders, " + parent_program.your_title + ".\n");
-                        if (!parent_program.extra_info)
+                        parent_program.shipIOHandler.Echo("Waiting for orders, " + Program.your_title + ".\n");
+                        if (!Program.extra_info)
                         {
                             parent_program.shipIOHandler.Echo("Ready for Waypoints.\n");
                         }
-                        
+
                         if (antenna_result != "") parent_program.shipIOHandler.Echo(antenna_result);
-                        
-                        if (parent_program.extra_info)
+
+#pragma warning disable CS0162 // Unreachable code detected
+                        if (Program.extra_info)
                         {
                             if (shipMass != 0) parent_program.shipIOHandler.Echo("Mass: " + shipMass);
                             parent_program.shipIOHandler.Echo("Thruster count: " + thrusters.Count);
@@ -331,6 +324,7 @@ namespace IngameScript
                             parent_program.shipIOHandler.OutputHomeLocations();
                             //}
                         }
+#pragma warning restore CS0162 // Unreachable code detected
                     }
 
                 Populate6ThrusterGroups();
@@ -351,7 +345,6 @@ namespace IngameScript
                 //var blockDimensions = Vector3I.Transform(block.Max - block.Min + Vector3I.One, MatrixD.Transpose(block.Orientation.GetMatrix()));
                 //var point = block.GetPosition() + block.WorldMatrix.Forward * block.CubeGrid.GridSize * blockDimensions.Z * 0.5
 
-
                 if (con.CubeGrid.GridSize == 0.5)
                     return con.CubeGrid.GridSize;
                 return con.CubeGrid.GridSize * 0.5;
@@ -363,7 +356,7 @@ namespace IngameScript
 
                 foreach (var block in parent_program.blocks)
                     if (block is IMyThrust && block.IsWorking && blockIsOnMyGrid(block))
-                        o_thrusters.Add((IMyThrust) block);
+                        o_thrusters.Add((IMyThrust)block);
                     else if (block is IMyThrust)
                     {
                         if (!((IMyThrust)block).Enabled && blockIsOnMyGrid(block))
@@ -379,7 +372,7 @@ namespace IngameScript
                 var o_gyros = new List<IMyGyro>();
                 foreach (var block in parent_program.blocks)
                     if (block is IMyGyro && block.IsWorking && blockIsOnMyGrid(block))
-                        o_gyros.Add((IMyGyro) block);
+                        o_gyros.Add((IMyGyro)block);
                 return o_gyros;
             }
 
@@ -399,11 +392,10 @@ namespace IngameScript
                 var found_connectable_connector = false;
                 foreach (var connector in Connectors)
                     if ((cockpit.CubeGrid.ToString() == connector.CubeGrid.ToString() &&
-                        !connector.CustomName.ToLower().Contains("[recall dock]") && !parent_program.allow_connector_on_seperate_grid) || (parent_program.allow_connector_on_seperate_grid && connector.CustomName.ToLower().Contains("[dock]")))
+                        !connector.CustomName.ToLower().Contains("[recall dock]") && !Program.allow_connector_on_seperate_grid) || (Program.allow_connector_on_seperate_grid && connector.CustomName.ToLower().Contains("[dock]")))
                     {
                         if (connector.Status == MyShipConnectorStatus.Connected)
                         {
-
                             if (!found_connected_connector)
                             {
                                 found_connected_connector = true;
@@ -424,7 +416,6 @@ namespace IngameScript
                 return output;
             }
 
-
             public void CheckForMassChange()
             {
                 var Masses = cockpit.CalculateShipMass();
@@ -439,27 +430,26 @@ namespace IngameScript
                 IMyShipController foundCockpit = null;
                 var foundMainCockpit = false;
 
-
                 foreach (var block in parent_program.blocks)
                     if (block is IMyShipController && blockIsOnMyGrid(block))
                     {
-                        if (foundCockpit == null) foundCockpit = (IMyShipController) block;
+                        if (foundCockpit == null) foundCockpit = (IMyShipController)block;
                         if (block is IMyCockpit)
                         {
-                            var c_cockpit = (IMyCockpit) block;
+                            var c_cockpit = (IMyCockpit)block;
 
-                            if (foundMainCockpit == false) foundCockpit = (IMyShipController) block;
+                            if (foundMainCockpit == false) foundCockpit = (IMyShipController)block;
                             if (c_cockpit.IsMainCockpit)
                             {
                                 foundMainCockpit = true;
-                                foundCockpit = (IMyShipController) block;
+                                foundCockpit = (IMyShipController)block;
                             }
                         }
 
                         if (block is IMyRemoteControl && foundMainCockpit == false)
-                            foundCockpit = (IMyShipController) block;
+                            foundCockpit = (IMyShipController)block;
                         if (block is IMyRemoteControl && remote_control == null)
-                            remote_control = (IMyRemoteControl) block;
+                            remote_control = (IMyRemoteControl)block;
                     }
 
                 return foundCockpit;
@@ -546,7 +536,7 @@ namespace IngameScript
                 string err_string = "";
                 if (unusedDirections.Count == 6)
                 {
-                    err_string = "Sorry " + parent_program.your_title + ", I couldn't seem to find any thrusters on your ship.";
+                    err_string = "Sorry " + Program.your_title + ", I couldn't seem to find any thrusters on your ship.";
                     if (off_thrusters_count > 0)
                     {
                         err_string += "\nI have detected that some thrusters\nare disabled. Could this be the problem?";
@@ -555,7 +545,7 @@ namespace IngameScript
                 }
                 else if (unusedDirections.Count == 1)
                 {
-                    err_string = "Sorry " + parent_program.your_title +
+                    err_string = "Sorry " + Program.your_title +
                                  ", it's required that all 6 directions have at least one thruster.\nThe missing direction might be " +
                                  unusedDirections[0] + ".";
                     if (off_thrusters_count > 0)
@@ -569,7 +559,7 @@ namespace IngameScript
                     var total_string = "";
                     foreach (var di in unusedDirections) total_string += di + "-";
 
-                    err_string = "Sorry " + parent_program.your_title +
+                    err_string = "Sorry " + Program.your_title +
                                  ", it's required that all 6 directions have at least one thruster.\nIt seems the missing directions might be: " +
                                  total_string;
                     if (off_thrusters_count > 0)
@@ -577,10 +567,8 @@ namespace IngameScript
                         err_string += "\nI have detected that some thrusters\nare disabled. Could this be the problem?";
                     }
 
-                    parent_program.shipIOHandler.Error(err_string); // 
+                    parent_program.shipIOHandler.Error(err_string); //
                 }
-
-
             }
 
             public void UpdateThrusterGroupsWorldDirections()
@@ -588,7 +576,7 @@ namespace IngameScript
                 foreach (var entry in thrusterGroups) entry.Value.UpdateWorldDirection();
             }
 
-            #endregion
+            #endregion StartupCalculations
 
             #region Overrides
 
@@ -607,7 +595,7 @@ namespace IngameScript
                 parent_program.shipIOHandler.Error(str);
             }
 
-            #endregion
+            #endregion Overrides
         }
 
         public class ThrusterGroup
@@ -621,9 +609,9 @@ namespace IngameScript
 
             // Temporary variables, defined here so they aren't defined every frame.
             public double lambdaResult;
+
             public Base6Directions.Direction LocalThrustDirection;
             public double[,] matrixM;
-
 
             /// <summary>Force In Newtons</summary>
             public double MaxThrust;

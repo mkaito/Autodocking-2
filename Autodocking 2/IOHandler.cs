@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using Sandbox.ModAPI.Ingame;
+﻿using Sandbox.ModAPI.Ingame;
 using SpaceEngineers.Game.ModAPI.Ingame;
+using System;
+using System.Collections.Generic;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
@@ -35,7 +35,9 @@ namespace IngameScript
             public void FindOutputBlocks()
             {
                 output_start_timers = new List<IMyTimerBlock>();
-                if (parent_program.force_timer_search_on_station)
+
+#pragma warning disable CS0162 // Unreachable code detected
+                if (Program.force_timer_search_on_station)
                 {
                     List<IMyTerminalBlock> t_search_blocks = new List<IMyTerminalBlock>();
                     parent_program.GridTerminalSystem.GetBlocks(t_search_blocks);
@@ -44,30 +46,33 @@ namespace IngameScript
                     output_LCDs = new List<IMyTextSurface>();
                     foreach (var block in t_search_blocks)
                     {
-                        if (block is IMyTimerBlock && block.CustomName.ToLower().Contains(parent_program.timer_tag))
+                        if (block is IMyTimerBlock && block.CustomName.ToLower().Contains(Program.timer_tag))
                             output_timers.Add((IMyTimerBlock)block);
-                        if (block is IMyTextSurface && block.CustomName.ToLower().Contains(parent_program.lcd_tag))
+
+                        if (block is IMyTextSurface && block.CustomName.ToLower().Contains(Program.lcd_tag))
                             output_LCDs.Add((IMyTextSurface)block);
-                        if (block is IMyTimerBlock && block.CustomName.ToLower().Contains(parent_program.start_timer_tag) && blockIsOnMyGrid(block))
+
+                        if (block is IMyTimerBlock && block.CustomName.ToLower().Contains(Program.start_timer_tag) && blockIsOnMyGrid(block))
                             output_start_timers.Add((IMyTimerBlock)block);
                     }
                 }
-                //
+#pragma warning restore CS0162 // Unreachable code detected
                 else
                 {
                     output_timers = new List<IMyTimerBlock>();
                     output_LCDs = new List<IMyTextSurface>();
                     foreach (var block in parent_program.blocks)
                     {
-                        if (block is IMyTimerBlock && block.CustomName.ToLower().Contains(parent_program.timer_tag) && blockIsOnMyGrid(block))
+                        if (block is IMyTimerBlock && block.CustomName.ToLower().Contains(Program.timer_tag) && blockIsOnMyGrid(block))
                             output_timers.Add((IMyTimerBlock)block);
-                        if (block is IMyTextSurface && block.CustomName.ToLower().Contains(parent_program.lcd_tag) && blockIsOnMyGrid(block))
+
+                        if (block is IMyTextSurface && block.CustomName.ToLower().Contains(Program.lcd_tag) && blockIsOnMyGrid(block))
                             output_LCDs.Add((IMyTextSurface)block);
-                        if (block is IMyTimerBlock && block.CustomName.ToLower().Contains(parent_program.start_timer_tag) && blockIsOnMyGrid(block))
+
+                        if (block is IMyTimerBlock && block.CustomName.ToLower().Contains(Program.start_timer_tag) && blockIsOnMyGrid(block))
                             output_start_timers.Add((IMyTimerBlock)block);
                     }
                 }
-
             }
 
             public bool blockIsOnMyGrid(IMyTerminalBlock block)
@@ -95,7 +100,6 @@ namespace IngameScript
                 Echo("GPS:" + coord_name + ":" + coords.X + ":" + coords.Y + ":" + coords.Z + ":");
             }
 
-
             /// <summary>
             ///     Adds the input string (or object) to an accumulated line.<br />
             ///     Use EchoFinish to output this accumulated line to the user.
@@ -120,16 +124,18 @@ namespace IngameScript
 
             public void OutputTimer()
             {
-                if (parent_program.force_timer_search_on_station)
-                {
+#pragma warning disable CS0162 // Unreachable code detected
+                if (Program.force_timer_search_on_station)
                     FindOutputBlocks();
-                }
+#pragma warning restore CS0162 // Unreachable code detected
+
                 if (output_timers.Count > 0)
                     foreach (var timer in output_timers)
                         if (timer != null)
                             if (timer.IsWorking)
                                 timer.Trigger();
             }
+
             public void OutputStartTimer()
             {
                 if (output_start_timers.Count > 0)
@@ -138,7 +144,6 @@ namespace IngameScript
                             if (timer.IsWorking)
                                 timer.Trigger();
             }
-
 
             public void WaypointEcho(string arg, int count, string extra_output)
             {
@@ -183,7 +188,6 @@ namespace IngameScript
                     echoLine = "";
                 }
             }
-
 
             public void OutputHomeLocations()
             {
